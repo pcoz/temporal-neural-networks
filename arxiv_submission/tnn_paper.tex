@@ -9,7 +9,7 @@
 \usepackage{hyperref}
 \usepackage{xcolor}
 \usepackage[margin=1in]{geometry}
-\usepackage{natbib}
+% \usepackage{natbib}  % Removed - using basic cite
 \usepackage{algorithm}
 \usepackage{algorithmic}
 
@@ -42,7 +42,7 @@ We present Temporal Neural Networks (TNNs), a biologically-inspired architecture
 
 \section{Introduction}
 
-Classical neural networks model neurons as instantaneous functions: given input $x$, compute output $y = f(Wx + b)$ with no temporal dynamics. This abstraction, while computationally convenient, diverges fundamentally from biological neural computation where neurons exhibit membrane potential dynamics, time constants, and temporal filtering \citep{gerstner2002spiking}.
+Classical neural networks model neurons as instantaneous functions: given input $x$, compute output $y = f(Wx + b)$ with no temporal dynamics. This abstraction, while computationally convenient, diverges fundamentally from biological neural computation where neurons exhibit membrane potential dynamics, time constants, and temporal filtering \cite{gerstner2002spiking}.
 
 We propose \textbf{Temporal Neural Networks (TNNs)}, where each neuron is a continuous-time dynamical system:
 \begin{equation}
@@ -66,19 +66,19 @@ This seemingly simple change has profound implications: the network now \emph{ex
 
 \subsection{Neural Ordinary Differential Equations}
 
-Neural ODEs \citep{chen2018neural} treat network depth as a continuous variable, replacing discrete layers with differential equation solvers. While powerful, they face challenges including high computational cost and sensitivity to adversarial inputs. Closed-form continuous-time networks \citep{hasani2022closed} address computational cost through analytical solutions, achieving 1--5 orders of magnitude speedup.
+Neural ODEs \cite{chen2018neural} treat network depth as a continuous variable, replacing discrete layers with differential equation solvers. While powerful, they face challenges including high computational cost and sensitivity to adversarial inputs. Closed-form continuous-time networks \cite{hasani2022closed} address computational cost through analytical solutions, achieving 1--5 orders of magnitude speedup.
 
 Our approach differs by operating at the \emph{neuron level} rather than network depth, using simple leaky integration without ODE solvers, and focusing on inference-time temporal dynamics.
 
 \subsection{Spiking Neural Networks}
 
-SNNs achieve robustness through temporal processing \citep{wang2025neuromorphic}, with research showing they can surpass traditional ANNs by leveraging temporal dynamics. The geometry of SNN robustness \citep{rullan2022geometry} demonstrates that networks become robust when voltages are confined to lower-dimensional subspaces.
+SNNs achieve robustness through temporal processing \cite{wang2025neuromorphic}, with research showing they can surpass traditional ANNs by leveraging temporal dynamics. The geometry of SNN robustness \cite{rullan2022geometry} demonstrates that networks become robust when voltages are confined to lower-dimensional subspaces.
 
 Our TNN approach captures similar benefits while remaining compatible with standard backpropagation and providing smoother dynamics suitable for regression tasks.
 
 \subsection{Symbolic Regression for Neural Dynamics}
 
-Recent work demonstrates that symbolic regression can discover interpretable governing equations from neural network dynamics \citep{yang2025learning, cranmer2020discovering}. We integrate this approach through PPF (Partial Form Finder) to discover per-neuron temporal dynamics.
+Recent work demonstrates that symbolic regression can discover interpretable governing equations from neural network dynamics \cite{yang2025learning, cranmer2020discovering}. We integrate this approach through PPF (Partial Form Finder) to discover per-neuron temporal dynamics.
 
 \section{Method}
 
@@ -247,7 +247,7 @@ This combination cannot be achieved by post-hoc smoothing alone.
 
 \subsection{Biological Plausibility}
 
-The TNN equation (Eq. \ref{eq:tnn}) is the \textbf{Leaky Integrate-and-Fire model} used throughout computational neuroscience \citep{gerstner2002spiking}. It captures key features of biological neurons: integration of inputs, leak toward resting potential, and temporal filtering.
+The TNN equation (Eq. \ref{eq:tnn}) is the \textbf{Leaky Integrate-and-Fire model} used throughout computational neuroscience \cite{gerstner2002spiking}. It captures key features of biological neurons: integration of inputs, leak toward resting potential, and temporal filtering.
 
 Real neural circuits trade instantaneous responsiveness for temporal stability---exactly what we observe in TNNs.
 
@@ -263,7 +263,7 @@ Classical neural networks are \emph{accurate but brittle}. Temporal neural netwo
 
 Code is available at: \url{https://github.com/pcoz/temporal-neural-networks}
 
-\bibliographystyle{plainnat}
+\bibliographystyle{plain}
 \begin{thebibliography}{10}
 
 \bibitem[Chen et al.(2018)]{chen2018neural}
