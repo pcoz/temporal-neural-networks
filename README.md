@@ -40,14 +40,6 @@ This simple change provides **dramatic improvements in stability and robustness*
 - **Biologically plausible** (based on Leaky Integrate-and-Fire model)
 - **Interpretable dynamics** via symbolic regression (PPF)
 
-## Installation
-
-```bash
-git clone https://github.com/pcoz/temporal-neural-networks.git
-cd temporal-neural-networks
-pip install numpy pandas scikit-learn
-```
-
 ## Quick Start
 
 ```python
@@ -76,19 +68,35 @@ prediction = np.argmax(output)
 ## Project Structure
 
 ```
-tnn/
-├── __init__.py              # Package exports
-├── classical_phase.py       # Phase 1: Classical network training
-├── form_discovery.py        # Phase 2: PPF integration
-├── conversion.py            # Phase 3: Temporal conversion
-├── temporal_neuron.py       # Temporal neuron implementation
-├── temporal_network.py      # Temporal network implementation
-├── har_experiment.py        # UCI HAR baseline experiment
-├── tnn_advantage_test.py    # Stability and robustness tests
-├── tnn_streaming_v2.py      # Raw signal streaming test
-├── TNN_REPORT.md            # Full technical report
-└── arxiv_submission/
-    └── tnn_paper.tex        # arXiv paper (LaTeX)
+temporal-neural-networks/
+├── tnn/                        # Core library
+│   ├── __init__.py             # Package exports
+│   ├── classical_phase.py      # Phase 1: Classical network training
+│   ├── form_discovery.py       # Phase 2: PPF integration
+│   ├── conversion.py           # Phase 3: Temporal conversion
+│   ├── temporal_neuron.py      # Temporal neuron implementation
+│   ├── temporal_network.py     # Temporal network implementation
+│   └── temporal_training.py    # Temporal training utilities
+├── examples/                   # Example experiments
+│   ├── har_experiment.py       # UCI HAR baseline experiment
+│   ├── tnn_advantage_test.py   # Stability and robustness tests
+│   ├── ecg_experiment.py       # ECG analysis example
+│   └── tnn_streaming_v2.py     # Raw signal streaming test
+├── tests/                      # Test suite
+│   └── test_tnn.py             # Core functionality tests
+├── docs/                       # Documentation
+│   ├── TNN_REPORT.md           # Full technical report
+│   └── arxiv_submission/       # arXiv paper (LaTeX + PDF)
+├── setup.py                    # Package installation
+└── README.md
+```
+
+## Installation
+
+```bash
+git clone https://github.com/pcoz/temporal-neural-networks.git
+cd temporal-neural-networks
+pip install -e .
 ```
 
 ## Experiments
@@ -96,19 +104,25 @@ tnn/
 ### Run the main experiment (UCI HAR)
 
 ```bash
-python har_experiment.py
+python examples/har_experiment.py
 ```
 
 ### Run the advantage tests (stability, robustness)
 
 ```bash
-python tnn_advantage_test.py
+python examples/tnn_advantage_test.py
 ```
 
 ### Run raw signal streaming test
 
 ```bash
-python tnn_streaming_v2.py
+python examples/tnn_streaming_v2.py
+```
+
+### Run tests
+
+```bash
+python tests/test_tnn.py
 ```
 
 ## Why TNNs Matter
