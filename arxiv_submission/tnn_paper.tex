@@ -80,6 +80,26 @@ Our TNN approach captures similar benefits while remaining compatible with stand
 
 Recent work demonstrates that symbolic regression can discover interpretable governing equations from neural network dynamics \cite{yang2025learning, cranmer2020discovering}. We integrate this approach through PPF (Partial Form Finder) to discover per-neuron temporal dynamics.
 
+\subsubsection{PPF: Partial Form Finder}
+
+PPF (Partial Form Finder) is a symbolic regression tool developed by Chalk\footnote{https://github.com/pcoz/ppf} specifically designed for discovering mathematical forms from time series data. Unlike general-purpose symbolic regression tools, PPF is optimized for:
+
+\begin{itemize}
+    \item \textbf{Partial matching}: Discovering forms that explain portions of the data, not requiring a single global equation
+    \item \textbf{Temporal patterns}: Specialized primitives for oscillations, exponential decay, and dynamical systems
+    \item \textbf{Interpretable output}: Producing human-readable equations rather than black-box approximations
+\end{itemize}
+
+PPF uses genetic programming to evolve candidate expressions, evaluating fitness based on $R^2$ correlation with the target time series. The search space includes:
+\begin{itemize}
+    \item Trigonometric functions: $\sin(\omega t + \phi)$, $\cos(\omega t)$
+    \item Exponential forms: $e^{-t/\tau}$, $e^{\alpha t}$
+    \item Rational functions: $(at + b)/(ct + d)$
+    \item Compositions: damped oscillations, modulated signals
+\end{itemize}
+
+For TNN form discovery, PPF analyzes neuron activation trajectories and returns symbolic expressions characterizing the temporal dynamics, from which we extract parameters such as natural frequency $\omega$, damping coefficient $\zeta$, and time constant $\tau$.
+
 \section{Method}
 
 \subsection{Phase 1: Classical Training}
