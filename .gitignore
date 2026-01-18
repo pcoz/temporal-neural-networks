@@ -33,3 +33,6 @@ Thumbs.db
 *.bbl
 *.blg
 *.synctex.gz
+
+# Session documents (local only)
+docs/session_*.md
