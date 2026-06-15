@@ -56,7 +56,7 @@ temporal = convert_to_temporal(classical, {}, default_type=NeuronType.LEAKY_INTE
 # Inference with temporal dynamics
 temporal.reset()
 for _ in range(settle_steps):
-    output = temporal.step(dt=0.1, external_input=x)
+    output = temporal.step(dt=0.1, input_signal=x)
 prediction = np.argmax(output)
 ```
 

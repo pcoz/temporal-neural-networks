@@ -38,7 +38,7 @@ Example:
     # Run with temporal dynamics
     temporal.reset()
     for _ in range(settle_steps):
-        output = temporal.step(dt=0.1, external_input=x)
+        output = temporal.step(dt=0.1, input_signal=x)
 """
 
 __version__ = "0.1.0"

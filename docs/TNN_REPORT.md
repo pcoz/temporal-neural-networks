@@ -192,7 +192,7 @@ This tradeoff is **fundamental to dynamical systems** and is exactly what we obs
 
 ### 4.1 What is PPF?
 
-PPF (Partial Form Finder) is a symbolic regression tool that discovers mathematical equations from time series data. Given activation trajectories, PPF can identify patterns like:
+PPF (Partial Form Finding) is a symbolic regression tool that discovers mathematical equations from time series data. Given activation trajectories, PPF can identify patterns like:
 
 - Damped oscillations: `A * exp(-t/τ) * sin(ωt + φ)`
 - Exponential decay: `A * exp(-t/τ) + B`
