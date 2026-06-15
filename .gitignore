@@ -36,3 +36,4 @@ Thumbs.db
 
 # Session documents (local only)
 docs/session_*.md
+examples/self_tuning_signal.png

@@ -143,6 +143,23 @@ class TemporalNetwork:
         self.weights = [w.copy() for w in weights]
         self.biases = [b.copy() for b in biases]
 
+    def enable_self_tuning(self, tau_min: Optional[float] = None,
+                           adapt_gain: Optional[float] = None,
+                           surprise_tau: Optional[float] = None) -> int:
+        """Enable self-tuning latency feedback on every leaky-integrator neuron.
+
+        With it on, the network keeps a fixed-tau network's stability under
+        noise but recovers a fast network's responsiveness on real, sustained
+        transitions — the tau self-tunes per neuron. Returns the number of
+        neurons switched to adaptive mode."""
+        n = 0
+        for layer in self.layers:
+            for neuron in layer.neurons:
+                if neuron.neuron_type == NeuronType.LEAKY_INTEGRATOR:
+                    neuron.enable_self_tuning(tau_min, adapt_gain, surprise_tau)
+                    n += 1
+        return n
+
     def step(self, dt: float, input_signal: np.ndarray) -> np.ndarray:
         """
         Advance the network by one time step.

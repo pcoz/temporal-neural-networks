@@ -413,6 +413,37 @@ This demonstrates that TNN dynamics operate on a different axis than training-ti
 
 ---
 
+## 6.4 Self-Tuning Latency Feedback (Adaptive Tau)
+
+The fixed-`tau` results above expose a trade-off: a large `tau` is stable but
+sluggish; a small `tau` is responsive but jittery (Section 6.1). An **opt-in**
+extension to the leaky neuron resolves much of this by letting `tau` *self-tune*
+via closed-loop feedback (off by default, so all results above are unchanged).
+
+**Mechanism.** A high-pass + low-pass detector flags a *sustained,
+statistically-significant* change in the input drive, normalised by an **online
+estimate of the signal's own noise floor** (so the threshold is scale-free, in
+sigma units — no per-signal tuning). On a detected change, `tau` drops to
+`tau_min` and the neuron "chases"; the chase is **sustained and terminated by
+the neuron's own tracking-lag feedback**, so a one-step noise spike (which
+creates no real lag) does not trigger a sustained response.
+
+**Result (single-neuron, step in heavy noise, default settings).** Versus a
+fixed large `tau` the adaptive neuron keeps essentially the same steady-state
+jitter (~0) while cutting step-response latency substantially (e.g. ~29 vs ~69
+steps in the bundled test); versus a fixed small `tau` it matches the
+responsiveness without the noise jitter. It thus recovers *both* ends of the
+Section-6.1 sweep from a single self-calibrating unit.
+
+**A second use — signal characterisation.** The self-tuning trace
+(`tau_eff`, `surprise`, online `sigma`) is itself a free, label-free,
+self-calibrating account of the signal: its change-points, its noise floor, and
+which variation is real versus noise. `examples/self_tuning_reveals_signal.py`
+shows the unit staying calm through a noisy-but-steady regime and firing only at
+genuine steps. All parameters are documented in `docs/PARAMETERS.md`.
+
+---
+
 ## 7. Why This Matters: Clinical and Industrial Relevance
 
 ### 7.1 Alarm Fatigue
