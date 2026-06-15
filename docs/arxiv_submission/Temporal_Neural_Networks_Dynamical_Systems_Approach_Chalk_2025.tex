@@ -30,7 +30,7 @@
     \url{https://github.com/pcoz}
 }
 
-\date{January 2025}
+\date{January 2025 \\ \small(revised: added self-tuning latency feedback, Section~\ref{sec:selftuning})}
 
 \begin{document}
 
@@ -41,7 +41,7 @@ We present Temporal Neural Networks (TNNs), a neural architecture in which each 
 
 TNNs are constructed using a three-phase pipeline: (1) conventional feedforward training to learn representations, (2) post-hoc dynamical system identification via symbolic regression to characterize temporal behavior, and (3) conversion to continuous-time temporal form. This decoupling of representation learning from temporal dynamics distinguishes TNNs from recurrent neural networks, continuous-time RNNs, Neural ODEs, and state space sequence models.
 
-We evaluate TNNs on the UCI Human Activity Recognition benchmark using subject-independent splits. TNNs match classical accuracy (95.1\% vs 95.3\%) while exhibiting dramatically improved temporal stability (75--91\% fewer prediction flips under noise) and superior robustness to missing data (+8.4\% accuracy at 40\% feature dropout). Ablation studies demonstrate that these gains arise from implicit dynamical regularization that constrains trajectory volatility rather than weights, and that TNN dynamics provide benefits beyond what post-hoc smoothing or noise-injection training can achieve alone.
+We evaluate TNNs on the UCI Human Activity Recognition benchmark using subject-independent splits. TNNs match classical accuracy (95.1\% vs 95.3\%) while exhibiting dramatically improved temporal stability (75--91\% fewer prediction flips under noise) and superior robustness to missing data (+8.4\% accuracy at 40\% feature dropout). Ablation studies demonstrate that these gains arise from implicit dynamical regularization that constrains trajectory volatility rather than weights, and that TNN dynamics provide benefits beyond what post-hoc smoothing or noise-injection training can achieve alone. Finally, we introduce an optional \emph{self-tuning latency feedback} that lets each neuron adapt its own time constant online---recovering both the stability of a large $\tau$ and the responsiveness of a small one---using a self-calibrating change detector whose internal trace doubles as a label-free characterization of the signal (change-points and noise floor).
 \end{abstract}
 
 \section{Introduction}
@@ -67,6 +67,7 @@ This formulation introduces temporal inertia without recurrence, enabling robust
     \item Empirical evidence of large stability and robustness gains without loss of accuracy
     \item Comprehensive ablation studies characterizing the effect of time constants, comparing against post-hoc smoothing baselines, and evaluating interaction with noise-injection training
     \item A dynamical interpretation of robustness as implicit trajectory-level regularization
+    \item An optional self-tuning latency feedback (adaptive time constant) that resolves the stability--responsiveness trade-off of a fixed $\tau$ via a self-calibrating, closed-loop change detector, and whose trace serves as a free online signal characterization
 \end{enumerate}
 
 \section{Related Work}
@@ -437,6 +438,94 @@ Key findings:
     \item TNN provides stability benefits \emph{without} requiring training modifications
     \item The approaches are complementary---noise-injection + TNN could be combined
 \end{itemize}
+
+\section{Self-Tuning Latency Feedback}
+\label{sec:selftuning}
+
+\subsection{Motivation: the stability--responsiveness trade-off}
+
+The time-constant sweep (Table~\ref{tab:tau_ablation}) exposes a tension inherent
+to any fixed-$\tau$ leaky integrator: a large $\tau$ gives stability and noise
+rejection but slow response, while a small $\tau$ gives fast response but
+admits jitter. The ablation's ``optimal'' $\tau$ is a compromise chosen for a
+particular noise level. We now describe an \emph{optional} mechanism that
+removes the need to choose: each neuron \textbf{self-tunes its own time
+constant online}, behaving like a large $\tau$ when the input is steady or noisy
+and like a small $\tau$ during a genuine, sustained change. It is opt-in and off
+by default, so all results above are unchanged.
+
+\subsection{Mechanism}
+
+The adaptation is a closed loop with two parts: a self-calibrating change
+\emph{detector} and a tracking-lag \emph{feedback} that gates the response.
+
+\paragraph{Onset detector (self-calibrating).} Let $u_t = g\,I_t$ be the raw
+input drive. We form a difference-of-EMAs band-pass and z-score it against an
+online estimate of its own variance:
+\begin{align}
+m^{\text{fast}}_t &= m^{\text{fast}}_{t-1} + r_f\,(u_t - m^{\text{fast}}_{t-1}), \quad
+m^{\text{slow}}_t = m^{\text{slow}}_{t-1} + r_s\,(u_t - m^{\text{slow}}_{t-1}), \\
+b_t &= m^{\text{fast}}_t - m^{\text{slow}}_t, \qquad
+\nu_t = \nu_{t-1} + r_\sigma\,(b_t^2 - \nu_{t-1}), \\
+z_t &= |b_t| \big/ \big(\sqrt{\nu_t} + \epsilon\big),
+\end{align}
+with per-step rates $r_f > r_s > r_\sigma$ (windows in steps). The band-pass
+$b_t$ rejects steady DC (via the slow mean) and single-sample noise (via the
+fast mean); the online variance $\nu_t$ makes the significance $z_t$
+\emph{scale-free}, expressed in units of the signal's own noise. The only
+threshold, $z_{\text{thresh}}$, is therefore in sigma units and need not be
+retuned per signal---addressing the fact that there is no universal best
+\emph{absolute} threshold.
+
+\paragraph{Closed-loop response.} A significant change latches a ``chase'':
+\begin{equation}
+\tau^{\text{eff}}_t =
+\begin{cases}
+\tau_{\min} & \text{while chasing}\\
+\tau & \text{otherwise,}
+\end{cases}
+\end{equation}
+where chasing is set when $z_t > z_{\text{thresh}}$ and cleared only when the
+change is fully accommodated---both the band-pass has subsided
+($z_t < z_{\text{exit}}$) \emph{and} the neuron's output has caught up
+(output-space lag below a small tolerance). The output-space (saturating)
+lag is what \emph{sustains} the chase until the neuron actually tracks the new
+level, and---because a one-step noise spike produces no real output lag---it
+also \emph{terminates} spurious chases immediately. This feedback is what lets
+$\tau$ stay small exactly long enough, without a hand-tuned hold time.
+
+\subsection{Result: recovering both ends of the sweep}
+
+On a single neuron tracking a step embedded in heavy noise
+($\sigma = 0.8$), the self-tuning neuron (default settings) keeps the
+steady-state jitter of the \emph{large}-$\tau$ neuron (essentially zero) while
+cutting step-response latency substantially (e.g.\ $\approx$29 vs $\approx$69
+steps in the reproducible bundled test), i.e.\ approaching the responsiveness of
+the \emph{small}-$\tau$ neuron without its noise penalty. It thus recovers both
+ends of Table~\ref{tab:tau_ablation} from one self-calibrating unit, and the
+same configuration holds across signals of different scale and noise level
+because the trigger is in sigma units.
+
+\subsection{A second use: the self-tuning trace as a signal probe}
+
+Because the detector calibrates to the signal's own noise floor, its internal
+trace is a free, label-free characterization of the input: the chase episodes
+mark \emph{change-points}, the online $\sqrt{\nu_t}$ tracks the \emph{noise
+floor}, and $z_t$ separates real change from noise. In a multi-regime test the
+unit stays calm through a noisy-but-steady stretch (no false alarm) and fires
+only at genuine steps, while its noise-floor estimate rises in the noisy regime.
+This positions the mechanism between adaptive filtering and online change-point
+detection: it is a causal, $O(1)$-state, self-calibrating adaptive low-pass
+whose change detector is \emph{coupled} to the filter---the detector retunes the
+filter rather than merely reporting.
+
+\subsection{Limitation}
+
+A \emph{very gradual} drift can evade the instantaneous significance test, since
+the drift's own band-pass slowly inflates the online variance it is measured
+against. Robust slow-drift detection is a natural extension via CUSUM-style
+accumulation of the normalized band-pass; the present detector targets abrupt
+regime changes with strong noise rejection.
 
 \section{Discussion}
 
