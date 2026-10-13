@@ -67,6 +67,7 @@ default, so classic fixed-`tau` behaviour is unchanged.
 | `sigma_steps` | `60` | steps | Window of the ONLINE band-pass variance estimate; also the **warmup** length before `tau` is allowed to shrink | Span enough samples to estimate the noise during a steady period. The first `sigma_steps` are warmup (variance calibrating; `tau` held at `tau`). |
 | `z_thresh` | `3.0` | σ (sigma units) | Onset threshold: a change is "real" past this many sigma. **Scale-free** — the same value works across signals of any magnitude/noise | Raise (e.g. 4–5) for fewer false triggers in heavy noise; lower (e.g. 2) to catch subtler changes. This is the closest thing to a universal knob. |
 | `z_exit` | `1.5` | σ | Hysteresis: the chase may end once `z` falls back below this | Keep `< z_thresh` to avoid chattering at the boundary. |
+| `sigma_clip` | `3.0` | σ | Robust variance update: `bp` is clipped at this many sigma before entering the online variance (tightened to `z_exit` while chasing), so events don't inflate the noise floor | `None` restores the old unclipped estimator. A genuinely noisier regime still raises sigma, at most by a factor `1 + (sigma_clip²−1)/sigma_steps` in variance per step. |
 | `caught_thresh` | `0.2` | output units (`tanh`, 0–2) | The output-space lag at which the neuron is deemed "caught up", ending the chase | Smaller = wait until the output has settled very precisely (longer chases); larger = end sooner. |
 
 > **Known limitation / future extension.** A *very gradual drift* can slip under

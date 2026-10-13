@@ -109,6 +109,24 @@ def test_zscore_not_capped_by_sigma_window():
     print(f"  PASS  z not capped (big step z={z_big[60]:.0f} vs old cap {cap:.0f})")
 
 
+def test_robust_sigma_after_event():
+    """After a large event, a second, smaller-but-real step must still be
+    detected, and sigma must inflate less than with the unclipped estimator."""
+    rng = np.random.default_rng(5)
+    p = {'tau': 5.0, 'fast_steps': 1, 'slow_steps': 10, 'sigma_steps': 25}
+    # big 3-day spike (80 sigma), back to baseline, then a modest real step (10 sigma)
+    sig = np.r_[np.full(40, 1.0), np.full(3, 5.0), np.full(27, 1.0), np.full(15, 1.5)] + rng.normal(0, 0.05, 85)
+    z, sg, ch = _trace(p, sig)
+    # the 2nd step must be significant on its own (it may fall inside the
+    # still-latched chase of the first event, so test z, not chase onsets)
+    assert z[70] > 3.0, f"second step must be significant (z={z[70]:.1f})"
+    z_raw, sg_raw, _ = _trace(dict(p, sigma_clip=None), sig)
+    assert z_raw[70] < 3.0, "control: the unclipped estimator misses it"
+    assert np.max(sg_raw[40:70]) > 2 * np.max(sg[40:70]), "clipping must curb inflation"
+    print(f"  PASS  robust sigma: 2nd step z={z[70]:.1f} (unclipped {z_raw[70]:.1f}); "
+          f"peak sigma {np.max(sg[40:70]):.2f} vs unclipped {np.max(sg_raw[40:70]):.2f}")
+
+
 if __name__ == "__main__":
     print("Self-tuning latency feedback — unit tests")
     test_off_by_default_is_identical()
@@ -116,4 +134,5 @@ if __name__ == "__main__":
     test_change_vs_noise_discrimination()
     test_network_enable_self_tuning()
     test_zscore_not_capped_by_sigma_window()
+    test_robust_sigma_after_event()
     print("ALL TESTS PASSED.")

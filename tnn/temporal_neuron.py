@@ -99,6 +99,7 @@ class TemporalNeuron:
                 'slow_steps': 40,       # BAND-PASS slow mean (the recent 'normal')
                 'sigma_steps': 60,      # online band-pass variance + warmup window
                 'z_thresh': 3.0,        # onset: change is 'real' past ~this many sigma
+                'sigma_clip': 3.0,      # robust variance: clip bp at this many sigma (None = off)
                 'z_exit': 1.5,          # hysteresis: chase may end once z falls below this
                 'caught_thresh': 0.2,   # output-space lag at which the chase ends (feedback)
             },
@@ -267,12 +268,27 @@ class TemporalNeuron:
         # z is scored against the PRE-update variance: scoring against a
         # variance that already contains this step's bp^2 caps z at
         # sqrt(sigma_steps) however large the change (z^2 <= 1/r_var).
+        # The update itself is ROBUST, so events don't inflate the noise floor
+        # (documented above but previously not implemented): bp^2 is clipped
+        # at (sigma_clip*sigma)^2 (default sigma_clip = z_thresh), tightened
+        # to z_exit while a chase is latched (an event in progress). var can
+        # then grow by at most a factor 1 + r_var*(clip^2 - 1) per step, so a
+        # big event barely moves sigma, yet a genuinely noisier regime still
+        # raises it. (A hard freeze during the chase was tried: it stops sigma
+        # adapting to a noisy regime, whose noise itself trips brief chases.)
+        # sigma_clip=None restores the old unclipped estimator.
         var_prev = getattr(self, '_bp_var', None)
         if var_prev is None:
             var_prev = bp * bp
         sig = var_prev ** 0.5                                 # pre-update online std
         z = abs(bp) / (sig + 1e-6)                            # significance, sigma units
-        self._bp_var = var_prev + (bp * bp - var_prev) * r_var
+        clip = self.params.get('sigma_clip', z_thresh)
+        bp2 = bp * bp
+        if clip is not None and var_prev > 0:
+            if getattr(self, '_chasing', False):              # event in progress:
+                clip = min(clip, self.params.get('z_exit', 1.5))  # near-freeze
+            bp2 = min(bp2, clip * clip * var_prev)
+        self._bp_var = var_prev + (bp2 - var_prev) * r_var
 
         # --- CLOSED-LOOP FEEDBACK: a significant change LATCHES a 'chase'; the
         # neuron's own tracking lag SUSTAINS it and TERMINATES it once the
