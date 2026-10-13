@@ -37,6 +37,9 @@ setup(
         "scipy>=1.7.0",
     ],
     extras_require={
+        "discovery": [
+            "scikit-learn>=1.0",   # only for clustered form discovery (lazy import)
+        ],
         "dev": [
             "pytest>=7.0.0",
             "pandas>=1.3.0",

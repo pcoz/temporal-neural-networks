@@ -16,7 +16,6 @@ discovering expressions like:
 import numpy as np
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
-from sklearn.cluster import KMeans
 
 # PPF imports
 from ppf import SymbolicRegressor
@@ -155,7 +154,13 @@ def _discover_clustered(
     if verbose:
         print(f"  Clustering into {n_clusters} groups")
 
-    # Cluster by activation pattern similarity
+    # Cluster by activation pattern similarity. scikit-learn is imported lazily:
+    # it is only needed for clustered discovery, so `import tnn` must not require it.
+    try:
+        from sklearn.cluster import KMeans
+    except ImportError as e:  # pragma: no cover - depends on environment
+        raise ImportError("clustered form discovery needs scikit-learn: "
+                          "pip install 'tnn[discovery]' (or scikit-learn)") from e
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     cluster_labels = kmeans.fit_predict(activations)
 
