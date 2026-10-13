@@ -263,15 +263,16 @@ class TemporalNeuron:
         m_slow = m_slow + (drive - m_slow) * r_slow
         self._m_slow = m_slow
         bp = m_fast - m_slow                                  # band-pass (signed) change signal
-        # Online variance of the band-pass. Updated every step but with a SLOW
-        # window (sigma_steps), so a brief event barely inflates it (the noise
-        # floor stays meaningful) yet z still recovers once the change is
-        # absorbed (bp -> 0), which is what lets the chase terminate.
-        var = getattr(self, '_bp_var', bp * bp)
-        var = var + (bp * bp - var) * r_var
-        self._bp_var = var
-        sig = var ** 0.5                                      # online std of the band-pass
+        # Online variance of the band-pass, with a SLOW window (sigma_steps).
+        # z is scored against the PRE-update variance: scoring against a
+        # variance that already contains this step's bp^2 caps z at
+        # sqrt(sigma_steps) however large the change (z^2 <= 1/r_var).
+        var_prev = getattr(self, '_bp_var', None)
+        if var_prev is None:
+            var_prev = bp * bp
+        sig = var_prev ** 0.5                                 # pre-update online std
         z = abs(bp) / (sig + 1e-6)                            # significance, sigma units
+        self._bp_var = var_prev + (bp * bp - var_prev) * r_var
 
         # --- CLOSED-LOOP FEEDBACK: a significant change LATCHES a 'chase'; the
         # neuron's own tracking lag SUSTAINS it and TERMINATES it once the

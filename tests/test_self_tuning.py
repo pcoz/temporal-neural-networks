@@ -87,10 +87,33 @@ def test_network_enable_self_tuning():
     print(f"  PASS  network.enable_self_tuning switched {n} neurons")
 
 
+def _trace(params, sig):
+    nu = TemporalNeuron(NeuronType.LEAKY_INTEGRATOR, params=dict(params, adaptive=True))
+    z, sg, ch = [], [], []
+    for x in sig:
+        nu.step(dt=1.0, inputs=float(x)); z.append(nu.zscore); sg.append(nu.noise_scale); ch.append(nu.surprise)
+    return np.array(z), np.array(sg), np.array(ch)
+
+
+def test_zscore_not_capped_by_sigma_window():
+    """z must scale with the size of a change. Scoring against a variance that
+    already includes the current bp^2 capped z at sqrt(sigma_steps)."""
+    rng = np.random.default_rng(3)
+    p = {'tau': 5.0, 'fast_steps': 1, 'slow_steps': 10, 'sigma_steps': 25}
+    base = 1.0 + rng.normal(0, 0.05, 60)
+    z_small, _, _ = _trace(p, np.r_[base, base[:5] + 0.5])
+    z_big, _, _ = _trace(p, np.r_[base, base[:5] + 5.0])
+    cap = 25 ** 0.5
+    assert z_big[60] > 2 * cap, f"big step z={z_big[60]:.1f} should exceed the old cap {cap}"
+    assert z_big[60] > 5 * z_small[60], "z must grow with the change magnitude"
+    print(f"  PASS  z not capped (big step z={z_big[60]:.0f} vs old cap {cap:.0f})")
+
+
 if __name__ == "__main__":
     print("Self-tuning latency feedback — unit tests")
     test_off_by_default_is_identical()
     test_best_of_both_on_step()
     test_change_vs_noise_discrimination()
     test_network_enable_self_tuning()
+    test_zscore_not_capped_by_sigma_window()
     print("ALL TESTS PASSED.")
